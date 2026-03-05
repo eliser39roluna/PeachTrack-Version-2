@@ -1,0 +1,871 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PeachTrack &mdash; SaaS Upgrade Overview</title>
+  <style>
+    :root{
+      --primary:#ff6b4a;
+      --primary2:#ff8a72;
+      --accent:#7c3aed;
+      --accent2:#9d68f0;
+      --green:#059669;
+      --red:#dc2626;
+      --bg:#f9fafb;
+      --card:#ffffff;
+      --text:#111827;
+      --muted:#6b7280;
+      --border:#e5e7eb;
+      --shadow:0 4px 24px rgba(17,24,39,.08);
+    }
+    *{box-sizing:border-box;margin:0;padding:0;}
+    body{
+      font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Arial;
+      background:var(--bg);color:var(--text);line-height:1.6;
+    }
+
+    /* ── Header ── */
+    .page-header{
+      background:linear-gradient(135deg,#1a0a00 0%,#2d1200 55%,#1f0e05 100%);
+      color:#fff;padding:56px 40px 48px;position:relative;overflow:hidden;
+    }
+    .page-header::before{
+      content:'';position:absolute;inset:0;
+      background:radial-gradient(700px 400px at 100% 0%,rgba(255,107,74,.22),transparent 60%);
+    }
+    .page-header .inner{position:relative;max-width:900px;margin:0 auto;}
+    .page-header .badge{
+      display:inline-flex;align-items:center;gap:7px;
+      background:rgba(255,107,74,.18);border:1px solid rgba(255,107,74,.30);
+      color:var(--primary2);border-radius:10px;padding:4px 13px;
+      font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;
+      margin-bottom:16px;
+    }
+    .page-header h1{font-size:2.2rem;font-weight:900;letter-spacing:-.5px;line-height:1.1;}
+    .page-header h1 span{
+      background:linear-gradient(90deg,var(--primary2),#ffd580);
+      -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+    }
+    .page-header p{margin-top:12px;font-size:15px;opacity:.75;max-width:600px;}
+    .meta{margin-top:20px;display:flex;gap:20px;flex-wrap:wrap;}
+    .meta-item{font-size:12px;opacity:.60;display:flex;align-items:center;gap:5px;}
+
+    /* ── Layout ── */
+    .container{max-width:960px;margin:0 auto;padding:40px 24px 80px;}
+    section{margin-bottom:48px;}
+    h2{font-size:1.25rem;font-weight:800;margin-bottom:18px;display:flex;align-items:center;gap:10px;color:var(--text);}
+    h2 .icon{
+      width:32px;height:32px;border-radius:10px;
+      background:linear-gradient(135deg,var(--primary),var(--primary2));
+      display:grid;place-items:center;font-size:15px;flex-shrink:0;
+      box-shadow:0 4px 12px rgba(255,107,74,.28);color:#fff;font-style:normal;
+    }
+    h2 .icon.purple{background:linear-gradient(135deg,var(--accent),var(--accent2));}
+    h2 .icon.green{background:linear-gradient(135deg,#059669,#34d399);}
+    h3{font-size:1rem;font-weight:700;margin-bottom:10px;}
+
+    /* ── Cards ── */
+    .card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:24px;box-shadow:var(--shadow);}
+    .card + .card{margin-top:14px;}
+
+    /* ── Compare grid ── */
+    .compare{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+    @media(max-width:650px){.compare{grid-template-columns:1fr;}}
+    .compare-card{border-radius:16px;padding:22px;border:1px solid;}
+    .compare-card.old{
+      background:#fef2f2;border-color:#fecaca;
+    }
+    .compare-card.new{
+      background:#f0fdf4;border-color:#a7f3d0;
+    }
+    .compare-card h3{font-size:13px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;margin-bottom:14px;}
+    .compare-card.old h3{color:var(--red);}
+    .compare-card.new h3{color:var(--green);}
+    .compare-card ul{list-style:none;display:flex;flex-direction:column;gap:7px;}
+    .compare-card ul li{font-size:13.5px;display:flex;align-items:flex-start;gap:8px;}
+    .compare-card ul li::before{
+      content:'';display:inline-block;width:16px;height:16px;
+      border-radius:50%;flex-shrink:0;margin-top:2px;
+      background-size:10px;background-repeat:no-repeat;background-position:center;
+    }
+    .compare-card.old ul li::before{background-color:#fca5a5;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M2 2l8 8M10 2L2 10' stroke='%23dc2626' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E");}
+    .compare-card.new ul li::before{background-color:#6ee7b7;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M1.5 6.5l3 3 6-6' stroke='%23059669' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");}
+
+    /* ── Change table ── */
+    .change-table{width:100%;border-collapse:collapse;font-size:13.5px;}
+    .change-table th{text-align:left;padding:10px 14px;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);border-bottom:2px solid var(--border);background:#f9fafb;}
+    .change-table td{padding:11px 14px;border-bottom:1px solid var(--border);vertical-align:top;}
+    .change-table tr:last-child td{border-bottom:none;}
+    .change-table tr:hover td{background:#f9fafb;}
+    .tag{display:inline-block;border-radius:7px;padding:2px 9px;font-size:11px;font-weight:700;}
+    .tag.new-file{background:#dcfce7;color:#166534;}
+    .tag.modified{background:#dbeafe;color:#1e40af;}
+    .tag.sql{background:#fef3c7;color:#92400e;}
+    .tag.security{background:#f3e8ff;color:#6b21a8;}
+    .tag.ui{background:#ffe4e6;color:#9f1239;}
+
+    /* ── DB schema ── */
+    .schema-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;}
+    .schema-table{border:1px solid var(--border);border-radius:12px;overflow:hidden;}
+    .schema-table .table-name{
+      padding:9px 14px;font-size:12px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;
+      background:linear-gradient(135deg,var(--primary),var(--primary2));color:#fff;
+    }
+    .schema-table .table-name.new-t{background:linear-gradient(135deg,var(--accent),var(--accent2));}
+    .schema-table .table-name .tbl-badge{
+      float:right;background:rgba(255,255,255,.22);border-radius:5px;
+      padding:1px 7px;font-size:10px;margin-top:1px;
+    }
+    .schema-table ul{list-style:none;padding:10px 14px;display:flex;flex-direction:column;gap:5px;}
+    .schema-table ul li{font-size:12px;font-family:ui-monospace,Consolas,monospace;color:var(--muted);}
+    .schema-table ul li strong{color:var(--text);font-weight:700;}
+    .schema-table ul li.added{color:#059669;}
+    .schema-table ul li.added strong{color:#059669;}
+
+    /* ── Role table ── */
+    .role-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;}
+    .role-card{border-radius:14px;border:1px solid var(--border);padding:18px 18px;background:var(--card);}
+    .role-code{
+      display:inline-block;border-radius:8px;padding:3px 11px;
+      font-size:11px;font-weight:700;letter-spacing:.06em;margin-bottom:10px;
+    }
+    .r100{background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;}
+    .r101{background:linear-gradient(135deg,var(--primary),var(--primary2));color:#fff;}
+    .r102{background:#e5e7eb;color:var(--muted);}
+    .role-card h3{font-size:14px;font-weight:800;margin-bottom:6px;}
+    .role-card ul{list-style:none;display:flex;flex-direction:column;gap:4px;}
+    .role-card ul li{font-size:12.5px;color:var(--muted);display:flex;align-items:center;gap:6px;}
+    .role-card ul li::before{content:'&#x2713;';color:var(--green);font-weight:800;}
+
+    /* ── Arch diagram ── */
+    .arch{background:#f8f5ff;border:1px solid #e5d9ff;border-radius:16px;padding:28px 24px;}
+    .arch-row{display:flex;align-items:center;gap:12px;margin-bottom:16px;flex-wrap:wrap;}
+    .arch-box{
+      border-radius:12px;padding:10px 16px;font-size:13px;font-weight:700;
+      border:1px solid;text-align:center;min-width:130px;
+    }
+    .arch-box.client{background:#fff7ed;border-color:#fed7aa;color:#c2410c;}
+    .arch-box.app{background:#eff6ff;border-color:#bfdbfe;color:#1d4ed8;}
+    .arch-box.session{background:#f0fdf4;border-color:#bbf7d0;color:#166534;}
+    .arch-box.db{background:#f3e8ff;border-color:#e9d5ff;color:#7c3aed;}
+    .arch-arrow{font-size:18px;color:var(--muted);}
+    .arch-note{font-size:12px;color:var(--muted);margin-top:4px;font-style:italic;}
+
+    /* ── Flow list ── */
+    .flow{display:flex;flex-direction:column;gap:0;}
+    .flow-step{display:flex;gap:14px;align-items:flex-start;padding:12px 0;}
+    .flow-step + .flow-step{border-top:1px dashed var(--border);}
+    .step-num{
+      width:28px;height:28px;flex-shrink:0;border-radius:50%;
+      background:linear-gradient(135deg,var(--primary),var(--primary2));
+      color:#fff;display:grid;place-items:center;font-size:12px;font-weight:800;
+    }
+    .step-body strong{font-size:14px;display:block;margin-bottom:2px;}
+    .step-body span{font-size:12.5px;color:var(--muted);}
+
+    /* ── Callout box ── */
+    .callout{border-radius:14px;padding:16px 20px;margin-top:16px;font-size:13.5px;border-left:4px solid;}
+    .callout.info{background:#eff6ff;border-color:#3b82f6;color:#1e40af;}
+    .callout.warn{background:#fffbeb;border-color:#f59e0b;color:#92400e;}
+    .callout.success{background:#f0fdf4;border-color:#22c55e;color:#166534;}
+
+    /* ── Footer ── */
+    .page-footer{text-align:center;padding:28px;font-size:12px;color:var(--muted);border-top:1px solid var(--border);}
+  </style>
+</head>
+<body>
+
+<!-- ══ HEADER ══════════════════════════════════════════════════ -->
+<div class="page-header">
+  <div class="inner">
+    <div class="badge">&#x1F4C4; SaaS Upgrade Report</div>
+    <h1>PeachTrack <span>SaaS Transformation</span></h1>
+    <p>A full breakdown of every change made when upgrading PeachTrack from a single-company app to a multi-tenant SaaS platform.</p>
+    <div class="meta">
+      <div class="meta-item">&#x1F4C5; March 2026</div>
+      <div class="meta-item">&#x1F4BB; PHP 8.4 &bull; MySQL 8.0 &bull; Apache 2.4</div>
+      <div class="meta-item">&#x1F527; Multi-tenant &bull; Role-based &bull; Company-scoped</div>
+    </div>
+  </div>
+</div>
+
+<div class="container">
+
+  <!-- ══ 1. OLD VS NEW ═══════════════════════════════════════════ -->
+  <section>
+    <h2><i class="icon">&#x21C4;</i> Old System vs. New SaaS</h2>
+    <div class="compare">
+      <div class="compare-card old">
+        <h3>&#x26A0; Original System</h3>
+        <ul>
+          <li>Hard-coded for a single business (Fuzzy Peach Salon)</li>
+          <li>All employees shared one database with no isolation</li>
+          <li>No company concept &mdash; one flat employee list</li>
+          <li>Only 2 roles: Manager (101) and Employee (102)</li>
+          <li>Login page branded specifically for one company</li>
+          <li>Username must end with <code>@peach</code></li>
+          <li>No platform-level oversight or admin</li>
+          <li>Any user could try to reach any page</li>
+          <li>Employee data mixed across all managers</li>
+          <li>No way to onboard a new business</li>
+        </ul>
+      </div>
+      <div class="compare-card new">
+        <h3>&#x2713; New SaaS System</h3>
+        <ul>
+          <li>Generic platform &mdash; any type of business can use it</li>
+          <li>Each company&rsquo;s data is fully isolated via <code>Company_ID</code></li>
+          <li>New <code>company</code> table with name, email, timestamp</li>
+          <li>3 roles: Super Admin (100), Manager (101), Employee (102)</li>
+          <li>Login page is platform-branded with feature highlights</li>
+          <li>Usernames are free-form, no forced suffix</li>
+          <li>Super Admin panel: KPI dashboard, company list, activate/deactivate</li>
+          <li>Every page checks role AND company ownership</li>
+          <li>Employees, shifts, tips, payroll all scoped per company</li>
+          <li>Super Admin can register new companies from the panel</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══ 2. ARCHITECTURE ═════════════════════════════════════════ -->
+  <section>
+    <h2><i class="icon purple">&#x1F5C3;</i> Multi-Tenant Architecture</h2>
+    <div class="card">
+      <div class="arch">
+        <div class="arch-row">
+          <div class="arch-box client">Browser / User</div>
+          <div class="arch-arrow">&#x2192;</div>
+          <div class="arch-box app">login.php</div>
+          <div class="arch-arrow">&#x2192;</div>
+          <div class="arch-box session">Session<br/><small>company_id, role, name</small></div>
+          <div class="arch-arrow">&#x2192;</div>
+          <div class="arch-box db">MySQL DB<br/><small>shared + scoped</small></div>
+        </div>
+        <p class="arch-note">Every SQL query on pages like manage_users, shifts, payroll and reports includes <strong>WHERE Company_ID = ?</strong> bound to the session value &mdash; so Company A can never see Company B&rsquo;s data.</p>
+      </div>
+
+      <div class="callout info" style="margin-top:18px;">
+        <strong>Design Pattern Used: Shared Database, Shared Schema with Tenant Column (Option A)</strong><br/>
+        All companies live in the same MySQL database. A <code>Company_ID</code> foreign key on the <code>employee</code> table acts as the tenant discriminator. Every query is filtered by the <code>company_id</code> stored in the PHP session at login time.
+      </div>
+    </div>
+  </section>
+
+  <!-- ══ 3. ROLE SYSTEM ══════════════════════════════════════════ -->
+  <section>
+    <h2><i class="icon purple">&#x1F464;</i> Role System</h2>
+    <div class="role-grid">
+      <div class="role-card">
+        <div class="role-code r100">Type_Code 100</div>
+        <h3>Super Admin</h3>
+        <ul>
+          <li><span>Access <code>superadmin.php</code> dashboard</span></li>
+          <li><span>See all companies and platform-wide KPIs</span></li>
+          <li><span>Register new companies</span></li>
+          <li><span>Activate / deactivate companies</span></li>
+          <li><span>Not tied to any specific company</span></li>
+        </ul>
+      </div>
+      <div class="role-card">
+        <div class="role-code r101">Type_Code 101</div>
+        <h3>Manager / Admin</h3>
+        <ul>
+          <li><span>Full access to their company&rsquo;s data only</span></li>
+          <li><span>Create &amp; manage employees</span></li>
+          <li><span>Create shifts, log tips</span></li>
+          <li><span>View reports and payroll</span></li>
+          <li><span>Can view-as any employee in their company</span></li>
+        </ul>
+      </div>
+      <div class="role-card">
+        <div class="role-code r102">Type_Code 102</div>
+        <h3>Employee</h3>
+        <ul>
+          <li><span>View their own shifts only</span></li>
+          <li><span>See their own tip history</span></li>
+          <li><span>No access to payroll or reports</span></li>
+          <li><span>Cannot create/edit other employees</span></li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══ 4. DATABASE CHANGES ══════════════════════════════════════ -->
+  <section>
+    <h2><i class="icon">&#x1F4BE;</i> Database Changes</h2>
+    <div class="card">
+      <p style="font-size:13.5px;color:var(--muted);margin-bottom:20px;">Migration file: <code>sql/alter_multitenancy.sql</code></p>
+      <div class="schema-grid">
+
+        <div class="schema-table">
+          <div class="table-name new-t">company <span class="tbl-badge">NEW</span></div>
+          <ul>
+            <li><strong>Company_ID</strong> INT PK AUTO_INCREMENT</li>
+            <li><strong>Company_Name</strong> VARCHAR(100)</li>
+            <li><strong>Admin_Email</strong> VARCHAR(100) UNIQUE</li>
+            <li><strong>Admin_Password</strong> VARCHAR(255)</li>
+            <li><strong>Created_At</strong> DATETIME DEFAULT NOW()</li>
+          </ul>
+        </div>
+
+        <div class="schema-table">
+          <div class="table-name">employee <span class="tbl-badge">ALTERED</span></div>
+          <ul>
+            <li>Employee_ID INT PK</li>
+            <li class="added"><strong>Company_ID</strong> INT FK &rarr; company &#x2795;</li>
+            <li>Type_Code INT FK</li>
+            <li>Employee_Name VARCHAR(100)</li>
+            <li>User_Name VARCHAR(50)</li>
+            <li class="added"><strong>Is_Active</strong> TINYINT(1) &#x2795;</li>
+          </ul>
+        </div>
+
+        <div class="schema-table">
+          <div class="table-name">shift</div>
+          <ul>
+            <li>Shift_ID INT PK</li>
+            <li>Employee_ID INT FK</li>
+            <li>Start_Time DATETIME</li>
+            <li>End_Time DATETIME</li>
+            <li class="added"><strong>Sale_Amount</strong> DECIMAL &#x2795;</li>
+          </ul>
+        </div>
+
+        <div class="schema-table">
+          <div class="table-name">tip</div>
+          <ul>
+            <li>Tip_ID INT PK</li>
+            <li>Shift_ID INT FK</li>
+            <li>Tip_Amount DECIMAL(8,2)</li>
+            <li>Is_It_Cash TINYINT(1)</li>
+            <li class="added"><strong>Tip_Time</strong> DATETIME &#x2795;</li>
+            <li class="added"><strong>Sale_Amount</strong> DECIMAL &#x2795;</li>
+            <li class="added"><strong>Pay_Period_ID</strong> INT &#x2795;</li>
+            <li class="added"><strong>Is_Deleted</strong> TINYINT(1) &#x2795;</li>
+          </ul>
+        </div>
+
+        <div class="schema-table">
+          <div class="table-name">credential</div>
+          <ul>
+            <li>Employee_ID INT PK FK</li>
+            <li>Password VARCHAR(255) bcrypt</li>
+          </ul>
+        </div>
+
+        <div class="schema-table">
+          <div class="table-name">user_type</div>
+          <ul>
+            <li>Type_Code INT PK</li>
+            <li>Type_Name VARCHAR(50)</li>
+            <li class="added"><strong>100</strong> = Super Admin &#x2795;</li>
+            <li>101 = Manager</li>
+            <li>102 = Employee</li>
+          </ul>
+        </div>
+
+      </div>
+      <div class="callout success" style="margin-top:18px;">
+        <strong>Backward compatible:</strong> All existing data was migrated automatically. The original Fuzzy Peach Salon employees were assigned <code>Company_ID = 1</code> via <code>UPDATE employee SET Company_ID = 1</code>. No data was lost.
+      </div>
+    </div>
+  </section>
+
+  <!-- ══ 5. ALL FILE CHANGES ══════════════════════════════════════ -->
+  <section>
+    <h2><i class="icon green">&#x1F4C1;</i> File Changes</h2>
+    <div class="card">
+      <table class="change-table">
+        <thead>
+          <tr>
+            <th>File</th>
+            <th>Type</th>
+            <th>What Changed</th>
+          </tr>
+        </thead>
+        <tbody>
+
+          <tr>
+            <td><code>sql/alter_multitenancy.sql</code></td>
+            <td><span class="tag sql">SQL &mdash; New</span></td>
+            <td>Creates <code>company</code> table; adds <code>Company_ID</code> FK column to <code>employee</code>; seeds Fuzzy Peach Salon as company #1.</td>
+          </tr>
+
+          <tr>
+            <td><code>src/db_config.php</code></td>
+            <td><span class="tag modified">Modified</span></td>
+            <td>Added three helper functions: <code>peachtrack_company_id()</code>, <code>peachtrack_company_name()</code>, <code>peachtrack_is_superadmin()</code>. These read company context from the session for use in all queries.</td>
+          </tr>
+
+          <tr>
+            <td><code>src/login.php</code></td>
+            <td><span class="tag modified">Modified</span> <span class="tag ui">UI</span></td>
+            <td>Login query now joins <code>company</code> table and stores <code>company_id</code> + <code>company_name</code> in session. Role 100 redirects to <code>superadmin.php</code>. UI redesigned: two-panel layout (brand pitch + login form), platform-generic copy, removed public company register link.</td>
+          </tr>
+
+          <tr>
+            <td><code>src/superadmin.php</code></td>
+            <td><span class="tag new-file">New File</span> <span class="tag ui">UI</span></td>
+            <td>Super Admin dashboard. Shows KPI cards (companies, employees, shifts, total tips), full company table with employee/shift/tip stats, deactivate/reactivate actions per company. Role-guarded: role 100 only.</td>
+          </tr>
+
+          <tr>
+            <td><code>src/company_register.php</code></td>
+            <td><span class="tag new-file">New File</span> <span class="tag security">Security</span></td>
+            <td>Form to register a new company tenant. Creates <code>company</code> record + manager <code>employee</code> + <code>credential</code> in a single DB transaction. Accessible only by Super Admin (role 100) &mdash; redirects to <code>login.php</code> for anyone else.</td>
+          </tr>
+
+          <tr>
+            <td><code>src/header.php</code></td>
+            <td><span class="tag modified">Modified</span></td>
+            <td>Sidebar now shows <code>company_name</code> from session instead of the hardcoded &ldquo;Manager Portal&rdquo; label.</td>
+          </tr>
+
+          <tr>
+            <td><code>src/manage_users.php</code></td>
+            <td><span class="tag modified">Modified</span> <span class="tag security">Security</span></td>
+            <td>Employee <code>INSERT</code> includes <code>Company_ID</code> from session. Employee list query scoped with <code>WHERE Company_ID = ?</code>.</td>
+          </tr>
+
+          <tr>
+            <td><code>src/manage_shifts.php</code></td>
+            <td><span class="tag modified">Modified</span> <span class="tag security">Security</span></td>
+            <td>Employee dropdown, active shifts, and shift range queries all scoped to <code>Company_ID</code>.</td>
+          </tr>
+
+          <tr>
+            <td><code>src/create_shift.php</code></td>
+            <td><span class="tag modified">Modified</span> <span class="tag security">Security</span></td>
+            <td>Employee list for shift creation scoped to <code>Company_ID</code>.</td>
+          </tr>
+
+          <tr>
+            <td><code>src/reports.php</code></td>
+            <td><span class="tag modified">Modified</span> <span class="tag security">Security</span></td>
+            <td>Employee dropdown and all report queries include <code>AND e.Company_ID = ?</code>.</td>
+          </tr>
+
+          <tr>
+            <td><code>src/payroll.php</code></td>
+            <td><span class="tag modified">Modified</span> <span class="tag security">Security</span></td>
+            <td>Payroll employee list scoped to company. Summary aggregation filtered by <code>Company_ID</code>.</td>
+          </tr>
+
+          <tr>
+            <td><code>src/payroll_details.php</code></td>
+            <td><span class="tag modified">Modified</span> <span class="tag security">Security</span></td>
+            <td>Employee lookup verified with <code>WHERE Employee_ID = ? AND Company_ID = ?</code> to prevent cross-company access.</td>
+          </tr>
+
+          <tr>
+            <td><code>src/api/active_shifts.php</code></td>
+            <td><span class="tag modified">Modified</span> <span class="tag security">Security</span></td>
+            <td>Live shift feed is now scoped to the calling user&rsquo;s <code>Company_ID</code>.</td>
+          </tr>
+
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ══ 6. LOGIN FLOW ═══════════════════════════════════════════ -->
+  <section>
+    <h2><i class="icon">&#x1F511;</i> Login &amp; Session Flow</h2>
+    <div class="card">
+      <div class="flow">
+        <div class="flow-step">
+          <div class="step-num">1</div>
+          <div class="step-body">
+            <strong>User submits username + password</strong>
+            <span>login.php queries <code>employee JOIN credential JOIN company</code> where <code>User_Name = ?</code> and <code>Is_Active = 1</code>.</span>
+          </div>
+        </div>
+        <div class="flow-step">
+          <div class="step-num">2</div>
+          <div class="step-body">
+            <strong>bcrypt verify</strong>
+            <span><code>password_verify()</code> checks the submitted password against the stored bcrypt hash in the <code>credential</code> table.</span>
+          </div>
+        </div>
+        <div class="flow-step">
+          <div class="step-num">3</div>
+          <div class="step-body">
+            <strong>Session is created</strong>
+            <span>Stores <code>loggedin, id, name, role, company_id, company_name</code>. Session ID is regenerated to prevent fixation attacks.</span>
+          </div>
+        </div>
+        <div class="flow-step">
+          <div class="step-num">4</div>
+          <div class="step-body">
+            <strong>Role-based redirect</strong>
+            <span>Role <code>100</code> &rarr; <code>superadmin.php</code>. Role <code>101</code> or <code>102</code> &rarr; <code>index.php</code> (company dashboard).</span>
+          </div>
+        </div>
+        <div class="flow-step">
+          <div class="step-num">5</div>
+          <div class="step-body">
+            <strong>Every page checks company scope</strong>
+            <span>All queries call <code>peachtrack_company_id()</code> to get the session <code>company_id</code> and bind it to every <code>WHERE</code> clause.</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══ 7. SECURITY IMPROVEMENTS ═══════════════════════════════ -->
+  <section>
+    <h2><i class="icon purple">&#x1F6E1;</i> Security Improvements</h2>
+    <div class="card">
+      <table class="change-table">
+        <thead>
+          <tr><th>Area</th><th>Before</th><th>After</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Data isolation</strong></td>
+            <td>No isolation &mdash; all employees in one flat table visible to any manager</td>
+            <td><code>Company_ID</code> scope on every query; cross-company access is impossible at the SQL level</td>
+          </tr>
+          <tr>
+            <td><strong>Company registration</strong></td>
+            <td>N/A &mdash; single company, hardcoded</td>
+            <td>Restricted to Super Admin only; direct URL access redirects to login</td>
+          </tr>
+          <tr>
+            <td><strong>Payroll cross-access</strong></td>
+            <td>Any manager could craft a URL with another company&rsquo;s employee ID</td>
+            <td><code>payroll_details.php</code> verifies <code>Employee_ID AND Company_ID</code> match</td>
+          </tr>
+          <tr>
+            <td><strong>Account activation</strong></td>
+            <td>No deactivation &mdash; accounts could not be blocked</td>
+            <td><code>Is_Active</code> column; deactivated accounts blocked at login. Super Admin can deactivate entire companies.</td>
+          </tr>
+          <tr>
+            <td><strong>Password storage</strong></td>
+            <td>bcrypt (already good)</td>
+            <td>bcrypt continues; Super Admin password set via secure PHP script (not PowerShell inline to avoid <code>$</code> stripping)</td>
+          </tr>
+          <tr>
+            <td><strong>Session fixation</strong></td>
+            <td>Not explicitly regenerated</td>
+            <td><code>session_regenerate_id(true)</code> called on successful login</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ══ 8. UI CHANGES ═══════════════════════════════════════════ -->
+  <section>
+    <h2><i class="icon">&#x1F3A8;</i> UI &amp; Branding Changes</h2>
+    <div class="card">
+      <table class="change-table">
+        <thead>
+          <tr><th>Page</th><th>What Changed</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>login.php</strong></td>
+            <td>Two-panel layout. Left: platform pitch with 3 feature cards, footer tags, dark warm background. Right: dark glass login form with &ldquo;Company Portal&rdquo; badge. Removed all &ldquo;Fuzzy Peach&rdquo; and &ldquo;salon/beauty&rdquo; branding. Public company registration link removed.</td>
+          </tr>
+          <tr>
+            <td><strong>superadmin.php</strong></td>
+            <td>Full app-shell layout: purple-accented sidebar, topbar with date, 4 KPI cards (companies / employees / shifts / tips), companies table with stats and action buttons. All icons use HTML entities (no emoji) to avoid encoding issues.</td>
+          </tr>
+          <tr>
+            <td><strong>company_register.php</strong></td>
+            <td>Clean card-based form. &ldquo;&#x2190; Back to Super Admin&rdquo; link always shown (since only Super Admin can access this page).</td>
+          </tr>
+          <tr>
+            <td><strong>header.php</strong></td>
+            <td>Sidebar heading shows live <code>company_name</code> from session so each tenant sees their own business name.</td>
+          </tr>
+          <tr>
+            <td><strong>about.php</strong></td>
+            <td>Description updated from &ldquo;salon/beauty bar workflow&rdquo; to generic &ldquo;managing shifts, tips, and payroll across your business&rdquo;.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ══ 9. SUPER ADMIN ACCOUNT ══════════════════════════════════ -->
+  <section>
+    <h2><i class="icon purple">&#x1F451;</i> Super Admin Account</h2>
+    <div class="card">
+      <table class="change-table">
+        <thead><tr><th>Field</th><th>Value</th></tr></thead>
+        <tbody>
+          <tr><td>Employee_ID</td><td><code>99999</code></td></tr>
+          <tr><td>Username</td><td><code>superadmin</code></td></tr>
+          <tr><td>Password</td><td><code>superadmin123</code></td></tr>
+          <tr><td>Type_Code</td><td><code>100</code> (Super Admin)</td></tr>
+          <tr><td>Company_ID</td><td><code>0</code> (no company &mdash; platform-level)</td></tr>
+        </tbody>
+      </table>
+      <div class="callout warn" style="margin-top:14px;">
+        Change the Super Admin password in production. The account has platform-wide access.
+      </div>
+    </div>
+  </section>
+
+</div>
+
+  <!-- ══ 10. MARCH 2026 UPDATES ══════════════════════════════════ -->
+  <section style="margin-top:56px;">
+    <h2><i class="icon" style="background:linear-gradient(135deg,#0ea5e9,#38bdf8);">&#x1F4C6;</i> March 2026 &mdash; Business Inquiry &amp; Hosting Updates</h2>
+
+    <!-- Overview callout -->
+    <div class="callout info" style="margin-bottom:24px;">
+      This release adds a public-facing <strong>business inquiry / demo request</strong> system, a <strong>Super Admin inbox</strong> with read/unread tracking, login page UI refinements, and a <strong>one-command public hosting</strong> script via ngrok.
+    </div>
+
+    <!-- 10a. New / Changed Files -->
+    <div class="card" style="margin-bottom:16px;">
+      <h3 style="margin-bottom:14px;">&#x1F4C1; New &amp; Modified Files</h3>
+      <table class="change-table">
+        <thead>
+          <tr><th>File</th><th>Type</th><th>What Changed</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>src/contact.php</code></td>
+            <td><span class="tag new-file">New File</span> <span class="tag ui">UI</span></td>
+            <td>Public-facing business inquiry form. Two-column layout (info panel + form) matching the login page aesthetic. Collects company name, contact name, work email, phone (optional), employee count (dropdown), and message. Saves every submission to the <code>contact_inquiry</code> DB table (reliable on all environments) and also attempts <code>mail()</code> for production servers. Includes server-side validation and a styled success / error confirmation.</td>
+          </tr>
+          <tr>
+            <td><code>src/inbox.php</code></td>
+            <td><span class="tag new-file">New File</span> <span class="tag ui">UI</span> <span class="tag security">Security</span></td>
+            <td>Super Admin &ndash; only inbox for all submitted inquiries. Two-panel email-client layout: left list with unread dot indicators + message previews, right detail view. Features: filter tabs (All / Unread / Read), mark individual or all as read, reply via email (pre-filled <code>mailto:</code>), delete with confirmation. Auto-marks an inquiry as read when opened. Unread count badge shown in sidebar nav.</td>
+          </tr>
+          <tr>
+            <td><code>src/login.php</code></td>
+            <td><span class="tag modified">Modified</span> <span class="tag ui">UI</span></td>
+            <td>Left brand panel background updated to <code>rgba(15,8,3,.72)</code> with <code>backdrop-filter:blur(18px)</code> &mdash; matching the sign-in card for visual consistency. Added a <strong>&ldquo;Request a Demo&rdquo;</strong> CTA button at the bottom of the brand panel (styled like the feature cards) that links to <code>contact.php</code>.</td>
+          </tr>
+          <tr>
+            <td><code>src/superadmin.php</code></td>
+            <td><span class="tag modified">Modified</span> <span class="tag ui">UI</span></td>
+            <td>Sidebar nav expanded: added <strong>Inbox</strong> link with a live red unread-count badge. Badge only appears when there are unread inquiries; disappears when inbox is cleared. Also fetches <code>contact_inquiry</code> unread count on every page load.</td>
+          </tr>
+          <tr>
+            <td><code>sql/alter_contact_inquiries.sql</code></td>
+            <td><span class="tag sql">SQL &mdash; New</span></td>
+            <td>Creates the <code>contact_inquiry</code> table with columns: <code>Inquiry_ID</code>, <code>Company</code>, <code>Contact_Name</code>, <code>Email</code>, <code>Phone</code>, <code>Employees</code>, <code>Message</code>, <code>Is_Read</code>, <code>Submitted_At</code>. Table is also auto-created by <code>contact.php</code> and <code>inbox.php</code> at runtime if it doesn&rsquo;t exist yet (graceful bootstrap).</td>
+          </tr>
+          <tr>
+            <td><code>scripts/start_peachtrack_ngrok.ps1</code></td>
+            <td><span class="tag new-file">New File</span></td>
+            <td>Windows PowerShell launcher script. Starts the PHP built-in server on <code>0.0.0.0:8080</code> (all interfaces) and ngrok HTTPS tunnel in the background, then prints the live public URL automatically by querying the ngrok local API (<code>http://localhost:4040/api/tunnels</code>). Validates that PHP and ngrok are present and that the ngrok auth token is configured before starting. Cleans up both processes on exit.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- 10b. New DB table -->
+    <div class="card" style="margin-bottom:16px;">
+      <h3 style="margin-bottom:14px;">&#x1F4BE; New Database Table: <code>contact_inquiry</code></h3>
+      <div class="schema-grid" style="grid-template-columns:repeat(auto-fit,minmax(260px,1fr));">
+        <div class="schema-table">
+          <div class="table-name new-t">contact_inquiry <span class="tbl-badge">NEW</span></div>
+          <ul>
+            <li><strong>Inquiry_ID</strong> INT UNSIGNED PK AUTO_INCREMENT</li>
+            <li><strong>Company</strong> VARCHAR(200) NOT NULL</li>
+            <li><strong>Contact_Name</strong> VARCHAR(200) NOT NULL</li>
+            <li><strong>Email</strong> VARCHAR(254) NOT NULL</li>
+            <li><strong>Phone</strong> VARCHAR(50) NULL</li>
+            <li><strong>Employees</strong> VARCHAR(20) NULL</li>
+            <li><strong>Message</strong> TEXT NOT NULL</li>
+            <li class="added"><strong>Is_Read</strong> TINYINT(1) DEFAULT 0 &#x2795;</li>
+            <li><strong>Submitted_At</strong> DATETIME DEFAULT NOW()</li>
+          </ul>
+        </div>
+      </div>
+      <div class="callout success" style="margin-top:14px;">
+        <strong>No migration required for existing data.</strong> The table is created fresh and is independent of all existing PeachTrack tables. The <code>Is_Read</code> column was added in a follow-up <code>ALTER TABLE</code> migration and is also included in the initial <code>CREATE TABLE</code> for new installs.
+      </div>
+    </div>
+
+    <!-- 10c. Hosting setup -->
+    <div class="card" style="margin-bottom:16px;">
+      <h3 style="margin-bottom:14px;">&#x1F310; Public Hosting via ngrok</h3>
+      <div class="flow">
+        <div class="flow-step">
+          <div class="step-num">1</div>
+          <div class="step-body">
+            <strong>Install ngrok</strong>
+            <span>Downloaded to <code>C:\ngrok\ngrok.exe</code> from the official ngrok Windows AMD64 release. No PATH change required &mdash; the script references the full path.</span>
+          </div>
+        </div>
+        <div class="flow-step">
+          <div class="step-num">2</div>
+          <div class="step-body">
+            <strong>Auth token configured</strong>
+            <span>Free ngrok account auth token saved via <code>C:\ngrok\ngrok.exe config add-authtoken &lt;TOKEN&gt;</code> to <code>%LOCALAPPDATA%\ngrok\ngrok.yml</code>.</span>
+          </div>
+        </div>
+        <div class="flow-step">
+          <div class="step-num">3</div>
+          <div class="step-body">
+            <strong>PHP server binds to <code>0.0.0.0</code></strong>
+            <span>Changed from <code>localhost</code> to <code>0.0.0.0:8080</code> so the server accepts connections from all network interfaces, not just the loopback.</span>
+          </div>
+        </div>
+        <div class="flow-step">
+          <div class="step-num">4</div>
+          <div class="step-body">
+            <strong>ngrok opens public HTTPS tunnel</strong>
+            <span>Tunnels <code>localhost:8080</code> to a public URL (e.g. <code>https://abc123.ngrok-free.app</code>). Accessible from any device on any network worldwide.</span>
+          </div>
+        </div>
+        <div class="flow-step">
+          <div class="step-num">5</div>
+          <div class="step-body">
+            <strong>URL printed automatically</strong>
+            <span>Script queries <code>http://localhost:4040/api/tunnels</code> and displays the live HTTPS URL in the terminal. ngrok dashboard available at <code>http://localhost:4040</code>.</span>
+          </div>
+        </div>
+      </div>
+      <div class="callout warn" style="margin-top:14px;">
+        <strong>Free plan limitation:</strong> The public URL changes every time ngrok is restarted. For a permanent URL, ngrok&rsquo;s paid plan or a static domain is required. The laptop must remain on and running for the site to be accessible.
+      </div>
+    </div>
+
+    <!-- 10d. UI summary -->
+    <div class="card">
+      <h3 style="margin-bottom:14px;">&#x1F3A8; UI &amp; UX Summary</h3>
+      <table class="change-table">
+        <thead><tr><th>Page</th><th>Change</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><strong>login.php</strong> &mdash; Brand Panel</td>
+            <td>Background changed from dark brown gradient to <code>rgba(15,8,3,.72)</code> frosted glass, matching the sign-in card. Added &ldquo;Request a Demo&rdquo; CTA button styled consistently with the feature item cards. Button links to <code>contact.php</code>.</td>
+          </tr>
+          <tr>
+            <td><strong>contact.php</strong> &mdash; Inquiry Form</td>
+            <td>Same dark background and page style as <code>login.php</code>. Left info panel shows email, phone, and response-time contact details. Right panel has labeled form fields with validation. Success state shows confirmation with the user&rsquo;s name. &ldquo;&larr; Back to Sign In&rdquo; always visible. 100% responsive &mdash; info panel hidden on mobile.</td>
+          </tr>
+          <tr>
+            <td><strong>inbox.php</strong> &mdash; Super Admin Inbox</td>
+            <td>Email-client two-panel layout. Unread items highlighted with a purple dot and tinted row background. Clicking a row auto-marks it as read and shows the full detail pane. Individual &ldquo;Mark as Read&rdquo;, &ldquo;Reply via Email&rdquo;, and &ldquo;Delete&rdquo; actions. Filter tabs persist in URLs for bookmarking.</td>
+          </tr>
+          <tr>
+            <td><strong>superadmin.php</strong> &mdash; Sidebar</td>
+            <td>Inbox nav item with animated red unread badge. Badge disappears automatically when all inquiries are read.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+</div>
+
+  <!-- ══ 11. MARCH 5 2026 UPDATES ══════════════════════════════ -->
+  <section style="margin-top:56px;">
+    <h2><i class="icon" style="background:linear-gradient(135deg,#7c3aed,#9d68f0);">&#x1F512;</i> March 5, 2026 &mdash; Super Admin Security &amp; Company Status</h2>
+
+    <div class="callout info" style="margin-bottom:24px;">
+      This release adds a <strong>Change Password</strong> feature for the Super Admin account and fixes the company deactivation UI so deactivated businesses are clearly labelled and only the correct action button is shown.
+    </div>
+
+    <!-- 11a. File changes -->
+    <div class="card" style="margin-bottom:16px;">
+      <h3 style="margin-bottom:14px;">&#x1F4C1; Modified Files</h3>
+      <table class="change-table">
+        <thead>
+          <tr><th>File</th><th>Type</th><th>What Changed</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>src/superadmin.php</code></td>
+            <td><span class="tag modified">Modified</span> <span class="tag security">Security</span> <span class="tag ui">UI</span></td>
+            <td>
+              <strong>Change Password:</strong> Added a <code>change_password</code> POST handler that verifies the current bcrypt password before hashing and saving the new one. Added a &ldquo;Change Password&rdquo; button above Logout in the sidebar. Clicking it opens a modal with <em>Current Password</em>, <em>New Password</em>, and <em>Confirm New Password</em> fields. Validation: passwords must match, minimum 8 characters, and the current password must be correct.
+              <br/><br/>
+              <strong>Company Status column:</strong> The companies SQL query now fetches <code>COALESCE(MAX(e.Is_Active), 1) AS company_active</code>. A new <em>Status</em> column in the table displays a green <strong>Active</strong> badge or a red <strong>Deactivated</strong> badge per company. Deactivated rows are visually dimmed (<code>opacity: 0.62</code>).
+              <br/><br/>
+              <strong>Context-aware action buttons:</strong> Active companies show only the <em>Deactivate</em> button; deactivated companies show only the <em>Reactivate</em> button (also with a confirmation prompt). Previously both buttons were always rendered simultaneously regardless of state.
+            </td>
+          </tr>
+          <tr>
+            <td><code>scripts/start_peachtrack_ngrok.ps1</code></td>
+            <td><span class="tag modified">Modified</span></td>
+            <td>Replaced all Unicode special characters (<code>&#x2500;</code>, <code>&#x2550;</code>, <code>&#x2192;</code>, <code>&#x2014;</code>, <code>&#x2013;</code>) with plain ASCII equivalents. PowerShell 5.1 on Windows failed to parse the script with a <em>&ldquo;string missing terminator&rdquo;</em> error caused by these characters. The fix makes the script runnable on all Windows PowerShell 5.1 environments without requiring a UTF-8 BOM or changing the execution policy.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- 11b. Security detail -->
+    <div class="card" style="margin-bottom:16px;">
+      <h3 style="margin-bottom:14px;">&#x1F6E1; Security Detail &mdash; Change Password Flow</h3>
+      <div class="flow">
+        <div class="flow-step">
+          <div class="step-num">1</div>
+          <div class="step-body">
+            <strong>Super Admin clicks &ldquo;Change Password&rdquo; in the sidebar</strong>
+            <span>A modal opens with three fields: Current Password, New Password, Confirm New Password.</span>
+          </div>
+        </div>
+        <div class="flow-step">
+          <div class="step-num">2</div>
+          <div class="step-body">
+            <strong>Server-side validation</strong>
+            <span>PHP checks: new password &ge; 8 characters, new and confirm fields match, current password is correct via <code>password_verify()</code> against the <code>credential</code> table.</span>
+          </div>
+        </div>
+        <div class="flow-step">
+          <div class="step-num">3</div>
+          <div class="step-body">
+            <strong>bcrypt hash stored</strong>
+            <span><code>password_hash($newPw, PASSWORD_DEFAULT)</code> generates a new bcrypt hash. The <code>credential</code> table record for the Super Admin&rsquo;s <code>Employee_ID</code> is updated.</span>
+          </div>
+        </div>
+        <div class="flow-step">
+          <div class="step-num">4</div>
+          <div class="step-body">
+            <strong>Success or error feedback</strong>
+            <span>A styled alert banner confirms the update or explains the specific validation failure (mismatch, too short, or wrong current password).</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 11c. UI summary -->
+    <div class="card">
+      <h3 style="margin-bottom:14px;">&#x1F3A8; UI Summary</h3>
+      <table class="change-table">
+        <thead><tr><th>Component</th><th>Change</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><strong>Sidebar &mdash; Change Password button</strong></td>
+            <td>Purple-accented ghost button above Logout. Opens the password-change modal on click. Styled consistently with the existing sidebar design using <code>var(--accent)</code> colours.</td>
+          </tr>
+          <tr>
+            <td><strong>Change Password modal</strong></td>
+            <td>Frosted-overlay modal with the same <code>fadeUp</code> animation used by the logo modal. Fields have focus ring on the accent colour. ESC key closes the modal. Clicking outside the modal box also closes it.</td>
+          </tr>
+          <tr>
+            <td><strong>Companies table &mdash; Status column</strong></td>
+            <td>New column between <em>Total Tips</em> and <em>Actions</em>. Active companies: green pill with checkmark. Deactivated companies: red pill with &times;. Entire table row is dimmed at 62&percnt; opacity when deactivated for at-a-glance visibility.</td>
+          </tr>
+          <tr>
+            <td><strong>Companies table &mdash; Action buttons</strong></td>
+            <td>Only one action button is rendered per row at any time. Active &rarr; <em>Deactivate</em> (red). Deactivated &rarr; <em>Reactivate</em> (green) with a confirmation dialog. Previously both buttons were always shown.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+</div>
+
+<div class="page-footer">
+  PeachTrack &mdash; SaaS Upgrade Documentation &bull; Updated March 5, 2026
+</div>
+
+</body>
+</html>

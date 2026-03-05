@@ -1,0 +1,17 @@
+.DS_Store
+# local env overrides (contain real DB credentials - never commit)
+.env
+src/db_config.local.php
+# macOS
+*.swp
+# logs
+*.log
+# backups
+*.bak
+# MAMP
+/Applications/
+# uploaded company logos (binary assets, not source code)
+src/assets/img/logos/
+# ngrok config (contains auth token)
+ngrok.yml
+*.yml
