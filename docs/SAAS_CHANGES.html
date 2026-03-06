@@ -861,6 +861,115 @@
     </div>
   </section>
 
+
+  <!-- ══ 12. MARCH 5 2026 — SERVICES SYSTEM ════════════════════ -->
+  <section style="margin-top:56px;">
+    <h2><i class="icon" style="background:linear-gradient(135deg,#f59e0b,#fbbf24);">&#x1F6CE;</i> March 5, 2026 &mdash; Services System</h2>
+
+    <div class="callout info" style="margin-bottom:24px;">
+      This release introduces a full <strong>Services</strong> feature. Managers can create and manage a list of billable services (with prices). Employees must select a service when logging a tip, and the sale amount is auto-filled from the service price. The Reports page now surfaces the top-performing service for the selected date range.
+    </div>
+
+    <!-- 12a. File changes -->
+    <div class="card" style="margin-bottom:16px;">
+      <h3 style="margin-bottom:14px;">&#x1F4C1; New &amp; Modified Files</h3>
+      <table class="change-table">
+        <thead>
+          <tr><th>File</th><th>Type</th><th>What Changed</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>sql/alter_services.sql</code></td>
+            <td><span class="tag new">New</span> <span class="tag db">DB</span></td>
+            <td>Creates the <code>service</code> table (<code>Service_ID</code>, <code>Company_ID</code> FK, <code>Service_Name</code>, <code>Price</code>, <code>Is_Active</code>). Adds <code>Service_ID</code> column to <code>tip</code> and a foreign key constraint <code>fk_tip_service</code> referencing <code>service.Service_ID</code>. Migration is scoped per company and safe to run once.</td>
+          </tr>
+          <tr>
+            <td><code>src/manage_services.php</code></td>
+            <td><span class="tag new">New</span> <span class="tag ui">UI</span></td>
+            <td>Manager-only CRUD page for services. Supports adding a new service (name + price) and toggling active/deactivated status. The &ldquo;All Services&rdquo; table defaults to 5 most-recently-added rows with a live search filter and a &ldquo;Show all / Show less&rdquo; toggle. Newest entries are listed first (<code>ORDER BY Service_ID DESC</code>).</td>
+          </tr>
+          <tr>
+            <td><code>src/header.php</code></td>
+            <td><span class="tag modified">Modified</span> <span class="tag ui">UI</span></td>
+            <td>Added a &#x1F6CE; <strong>Services</strong> navigation link to the sidebar for users with the Manager role (role&nbsp;101). Link points to <code>manage_services.php</code>.</td>
+          </tr>
+          <tr>
+            <td><code>src/edit_shift.php</code></td>
+            <td><span class="tag modified">Modified</span> <span class="tag ui">UI</span></td>
+            <td>Add Tip form now includes a required <strong>Service</strong> dropdown. Each <code>&lt;option&gt;</code> carries a <code>data-price</code> attribute; selecting a service auto-fills the Sale Amount field via JavaScript. The <code>add_tip</code> POST handler validates that <code>service_id &gt; 0</code>. If no active services exist, the form is disabled and a warning is shown.</td>
+          </tr>
+          <tr>
+            <td><code>src/index.php</code></td>
+            <td><span class="tag modified">Modified</span> <span class="tag ui">UI</span></td>
+            <td>
+              <strong>Log Tip form:</strong> Added a required <strong>Service</strong> dropdown with the same price auto-fill behaviour. The <code>submit_tip</code> POST handler now includes <code>Service_ID</code> in the INSERT using <code>peachtrack_has_column()</code> for graceful degradation on schemas without the column.
+              <br/><br/>
+              <strong>Recent Tips card:</strong> Revamped from grouped per-date sub-tables into a single flat, searchable table. New columns: Date, Time, Service, Tip Amount, Sale Amount, Method. Defaults to 5 rows with a &ldquo;Show all / Show less&rdquo; toggle and a live search input (filters by date, service name, and payment method).
+            </td>
+          </tr>
+          <tr>
+            <td><code>src/reports.php</code></td>
+            <td><span class="tag modified">Modified</span> <span class="tag ui">UI</span></td>
+            <td>Replaced the &ldquo;Selected employee&rdquo; KPI card with a <strong>Top Service</strong> card. Queries <code>service</code> via <code>JOIN</code>, groups by <code>Service_ID</code>, orders by total tips, and displays the #1 service name with its aggregated tip total for the selected date range. Falls back gracefully if the migration has not been run.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- 12b. DB schema -->
+    <div class="card" style="margin-bottom:16px;">
+      <h3 style="margin-bottom:14px;">&#x1F5C4; Database Schema &mdash; <code>service</code> Table</h3>
+      <table class="change-table">
+        <thead><tr><th>Column</th><th>Type</th><th>Notes</th></tr></thead>
+        <tbody>
+          <tr><td><code>Service_ID</code></td><td><code>INT UNSIGNED</code></td><td>Primary key, auto-increment</td></tr>
+          <tr><td><code>Company_ID</code></td><td><code>INT</code></td><td>FK &rarr; <code>company.Company_ID</code> &mdash; scopes services per tenant</td></tr>
+          <tr><td><code>Service_Name</code></td><td><code>VARCHAR(100)</code></td><td>Display name shown in dropdowns</td></tr>
+          <tr><td><code>Price</code></td><td><code>DECIMAL(8,2)</code></td><td>Default sale amount; employee can override</td></tr>
+          <tr><td><code>Is_Active</code></td><td><code>TINYINT(1)</code></td><td><code>1</code> = active, <code>0</code> = deactivated; only active services appear in tip forms</td></tr>
+        </tbody>
+      </table>
+      <div class="callout info" style="margin-top:14px; font-size:13px;">
+        <code>tip.Service_ID</code> (INT, nullable) was added with FK constraint <code>fk_tip_service</code> &rarr; <code>service.Service_ID</code>. Old tip records without a service receive <code>NULL</code> and are handled gracefully throughout the UI.
+      </div>
+    </div>
+
+    <!-- 12c. Feature flow -->
+    <div class="card">
+      <h3 style="margin-bottom:14px;">&#x1F504; Service Selection Flow</h3>
+      <div class="flow">
+        <div class="flow-step">
+          <div class="step-num">1</div>
+          <div class="step-body">
+            <strong>Manager creates services</strong>
+            <span>Via <code>manage_services.php</code> — enters a service name and default price. Services are scoped to the manager&rsquo;s company.</span>
+          </div>
+        </div>
+        <div class="flow-step">
+          <div class="step-num">2</div>
+          <div class="step-body">
+            <strong>Employee opens Log Tip or Add Tip form</strong>
+            <span>The Service dropdown is populated with all active services for their company. The field is required; the form cannot be submitted without a selection.</span>
+          </div>
+        </div>
+        <div class="flow-step">
+          <div class="step-num">3</div>
+          <div class="step-body">
+            <strong>Sale amount is auto-filled</strong>
+            <span>Selecting a service instantly fills the Sale Amount field with the service&rsquo;s default price via a JavaScript <code>change</code> listener on the dropdown. The employee can still edit the amount before submitting.</span>
+          </div>
+        </div>
+        <div class="flow-step">
+          <div class="step-num">4</div>
+          <div class="step-body">
+            <strong>Tip saved with Service_ID</strong>
+            <span>The server validates <code>service_id &gt; 0</code> and stores it in <code>tip.Service_ID</code>. The Recent Tips card and Reports page then reflect the service name.</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
 </div>
 
 <div class="page-footer">

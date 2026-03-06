@@ -184,6 +184,33 @@ foreach ($rows as $r) {
     }
 }
 
+// Top services in date range
+$topServices     = [];
+$hasServiceColRpt = peachtrack_has_column($conn, 'tip', 'Service_ID');
+if ($hasServiceColRpt) {
+    $sqlTopSvc = "
+SELECT sv.Service_Name,
+       COUNT(t.Tip_ID) AS tip_count,
+       COALESCE(SUM(t.Tip_Amount), 0) AS total_tips
+FROM tip t
+JOIN shift s ON s.Shift_ID = t.Shift_ID
+JOIN employee e ON e.Employee_ID = s.Employee_ID
+JOIN service sv ON sv.Service_ID = t.Service_ID
+{$where}
+  AND t.Service_ID IS NOT NULL
+  {$tipJoinCond}
+GROUP BY sv.Service_ID, sv.Service_Name
+ORDER BY total_tips DESC
+LIMIT 5;
+";
+    $stmt = $conn->prepare($sqlTopSvc);
+    if ($stmt) {
+        $stmt->bind_param($types, ...$params);
+        $stmt->execute();
+        $topServices = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
+    }
+}
+
 ?>
 
 <div class="card">
@@ -316,10 +343,18 @@ foreach ($rows as $r) {
 
   <div class="card kpi">
     <div>
-      <div class="label">Selected employee</div>
-      <div class="value"><?php echo ($employee==='all') ? 'All' : htmlspecialchars((string)$employee); ?></div>
+      <div class="label">Top Service</div>
+      <div class="value" style="font-size:1.05rem; line-height:1.2;"><?php echo $topServices ? htmlspecialchars($topServices[0]['Service_Name']) : '&mdash;'; ?></div>
     </div>
-    <div class="muted">tips & sales charts update above</div>
+    <div class="muted" style="margin-top:6px;">
+      <?php if (!$hasServiceColRpt): ?>
+        <span style="font-size:11px;">Run services migration to enable</span>
+      <?php elseif (empty($topServices)): ?>
+        <span style="font-size:11px;">No service data in this range</span>
+      <?php else: ?>
+        <span>$<?php echo number_format((float)$topServices[0]['total_tips'], 2); ?> in tips</span>
+      <?php endif; ?>
+    </div>
   </div>
 </div>
 

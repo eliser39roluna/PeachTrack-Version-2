@@ -47,25 +47,39 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_shift'])) {
 
 // Add tip
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_tip'])) {
-    $tip = (float)($_POST['tip_amount'] ?? 0);
-    $isCash = (int)($_POST['is_cash'] ?? 1);
+    $tip       = (float)($_POST['tip_amount'] ?? 0);
+    $isCash    = (int)($_POST['is_cash'] ?? 1);
+    $serviceId = (int)($_POST['service_id'] ?? 0);
     if ($tip <= 0) {
-        $message = "Tip amount must be > 0";
+        $message     = "Tip amount must be > 0";
+        $messageType = "error";
+    } elseif ($serviceId <= 0) {
+        $message     = "Please select a service.";
         $messageType = "error";
     } else {
-        // Prefer Tip_Time column if present
-        $sql = "INSERT INTO tip (Shift_ID, Tip_Amount, Is_It_Cash, Tip_Time) VALUES (?, ?, ?, NOW())";
-        $stmt = $conn->prepare($sql);
-        if (!$stmt) {
-            $sql = "INSERT INTO tip (Shift_ID, Tip_Amount, Is_It_Cash) VALUES (?, ?, ?)";
+        $hasServiceCol = peachtrack_has_column($conn, 'tip', 'Service_ID');
+        if ($hasServiceCol) {
+            $sql  = "INSERT INTO tip (Shift_ID, Tip_Amount, Is_It_Cash, Service_ID, Tip_Time) VALUES (?, ?, ?, ?, NOW())";
             $stmt = $conn->prepare($sql);
+            if (!$stmt) {
+                $sql  = "INSERT INTO tip (Shift_ID, Tip_Amount, Is_It_Cash, Service_ID) VALUES (?, ?, ?, ?)";
+                $stmt = $conn->prepare($sql);
+            }
+            $stmt->bind_param("idii", $shiftId, $tip, $isCash, $serviceId);
+        } else {
+            $sql  = "INSERT INTO tip (Shift_ID, Tip_Amount, Is_It_Cash, Tip_Time) VALUES (?, ?, ?, NOW())";
+            $stmt = $conn->prepare($sql);
+            if (!$stmt) {
+                $sql  = "INSERT INTO tip (Shift_ID, Tip_Amount, Is_It_Cash) VALUES (?, ?, ?)";
+                $stmt = $conn->prepare($sql);
+            }
+            $stmt->bind_param("idi", $shiftId, $tip, $isCash);
         }
-        $stmt->bind_param("idi", $shiftId, $tip, $isCash);
         if ($stmt->execute()) {
-            $message = "Tip added.";
+            $message     = "Tip added.";
             $messageType = "success";
         } else {
-            $message = "Error adding tip: " . $conn->error;
+            $message     = "Error adding tip: " . $conn->error;
             $messageType = "error";
         }
     }
@@ -162,6 +176,16 @@ $stmt->bind_param("i", $shiftId);
 $stmt->execute();
 $tips = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
 
+// Load services for dropdown
+$companyId = (int)($_SESSION['company_id'] ?? 0);
+$services  = [];
+$svcStmt   = $conn->prepare("SELECT Service_ID, Service_Name, Price FROM service WHERE Company_ID = ? AND Is_Active = 1 ORDER BY Service_Name ASC");
+if ($svcStmt) {
+    $svcStmt->bind_param("i", $companyId);
+    $svcStmt->execute();
+    $services = $svcStmt->get_result()->fetch_all(MYSQLI_ASSOC);
+}
+
 require_once "header.php";
 ?>
 
@@ -217,9 +241,23 @@ require_once "header.php";
 <div class="grid grid-2">
   <div class="card">
     <h3 style="margin-top:0;">➕ Add Tip</h3>
+    <?php if (empty($services)): ?>
+      <div class="alert error" style="margin-bottom:10px;">No active services found. Ask your manager to add services in <strong>Services</strong> before logging tips.</div>
+    <?php endif; ?>
     <form method="POST" class="no-print">
       <input type="hidden" name="add_tip" value="1" />
-      <label>Tip Amount</label>
+      <label>Service <span style="color:#dc2626;">*</span></label>
+      <select name="service_id" id="es_serviceSelect" required <?php echo empty($services) ? 'disabled' : ''; ?>>
+        <option value="">-- Select a Service --</option>
+        <?php foreach ($services as $svc): ?>
+          <option value="<?php echo (int)$svc['Service_ID']; ?>" data-price="<?php echo (float)$svc['Price']; ?>">
+            <?php echo htmlspecialchars($svc['Service_Name']); ?> &mdash; $<?php echo number_format((float)$svc['Price'], 2); ?>
+          </option>
+        <?php endforeach; ?>
+      </select>
+      <label style="margin-top:10px;">Sale Amount ($) <span class="muted" style="font-size:11px; font-weight:400;">(auto-filled, editable)</span></label>
+      <input type="number" step="0.01" min="0" name="sale_amount" id="es_saleAmount" placeholder="0.00" />
+      <label style="margin-top:10px;">Tip Amount <span style="color:#dc2626;">*</span></label>
       <input type="number" step="0.01" name="tip_amount" required />
       <label>Method</label>
       <select name="is_cash">
@@ -227,9 +265,16 @@ require_once "header.php";
         <option value="0">Electronic</option>
       </select>
       <div style="margin-top:12px;">
-        <button class="btn btn-primary" type="submit">Add</button>
+        <button class="btn btn-primary" type="submit" <?php echo empty($services) ? 'disabled' : ''; ?>>Add</button>
       </div>
     </form>
+    <script>
+    document.getElementById('es_serviceSelect').addEventListener('change', function() {
+      var sel = this.options[this.selectedIndex];
+      var price = sel.getAttribute('data-price');
+      document.getElementById('es_saleAmount').value = price ? parseFloat(price).toFixed(2) : '';
+    });
+    </script>
   </div>
 
   <div class="card">

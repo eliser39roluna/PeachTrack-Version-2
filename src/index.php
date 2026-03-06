@@ -96,56 +96,70 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     // Submit Tip
     if (isset($_POST['submit_tip'])) {
         if (!$current_shift_id) {
-            $message = "Start a shift before submitting tips.";
+            $message     = "Start a shift before submitting tips.";
             $messageType = "error";
         } else {
-            $tip_amount = (float)($_POST['tip_amount'] ?? 0);
+            $tip_amount  = (float)($_POST['tip_amount']  ?? 0);
             $sale_amount = (float)($_POST['sale_amount'] ?? 0);
-            $is_cash = (int)($_POST['is_cash'] ?? 1);
+            $is_cash     = (int)($_POST['is_cash']       ?? 1);
+            $service_id  = (int)($_POST['service_id']    ?? 0);
 
             // Validation
             if ($tip_amount <= 0) {
-                $message = "Tip amount must be greater than 0.";
+                $message     = "Tip amount must be greater than 0.";
                 $messageType = "error";
             } elseif ($sale_amount < 0) {
-                $message = "Sales amount cannot be negative.";
+                $message     = "Sales amount cannot be negative.";
+                $messageType = "error";
+            } elseif ($service_id <= 0) {
+                $message     = "Please select a service.";
                 $messageType = "error";
             } else {
-                $hasTipSale = peachtrack_has_column($conn, 'tip', 'Sale_Amount');
+                $hasTipSale    = peachtrack_has_column($conn, 'tip', 'Sale_Amount');
+                $hasServiceCol = peachtrack_has_column($conn, 'tip', 'Service_ID');
 
-                // Insert tip (supports older schema without tip.Sale_Amount)
-                if ($hasTipSale) {
-                    $sqlTip = "INSERT INTO tip (Shift_ID, Tip_Amount, Sale_Amount, Is_It_Cash, Tip_Time) VALUES (?, ?, ?, ?, NOW())";
-                    $stmt = $conn->prepare($sqlTip);
-                    if (!$stmt) {
-                        $sqlTip = "INSERT INTO tip (Shift_ID, Tip_Amount, Sale_Amount, Is_It_Cash) VALUES (?, ?, ?, ?)";
-                        $stmt = $conn->prepare($sqlTip);
-                    }
-                    $stmt->bind_param("iddi", $current_shift_id, $tip_amount, $sale_amount, $is_cash);
-                } else {
-                    $sqlTip = "INSERT INTO tip (Shift_ID, Tip_Amount, Is_It_Cash, Tip_Time) VALUES (?, ?, ?, NOW())";
-                    $stmt = $conn->prepare($sqlTip);
-                    if (!$stmt) {
-                        $sqlTip = "INSERT INTO tip (Shift_ID, Tip_Amount, Is_It_Cash) VALUES (?, ?, ?)";
-                        $stmt = $conn->prepare($sqlTip);
-                    }
-                    $stmt->bind_param("idi", $current_shift_id, $tip_amount, $is_cash);
+                // Build INSERT dynamically based on available schema columns
+                $cols   = "Shift_ID, Tip_Amount, Is_It_Cash";
+                $vals   = "?, ?, ?";
+                $types  = "idi";
+                $params = [$current_shift_id, $tip_amount, $is_cash];
+
+                if ($hasTipSale)    { $cols .= ", Sale_Amount"; $vals .= ", ?"; $types .= "d"; $params[] = $sale_amount; }
+                if ($hasServiceCol) { $cols .= ", Service_ID";  $vals .= ", ?"; $types .= "i"; $params[] = $service_id; }
+
+                $sqlTip = "INSERT INTO tip ($cols, Tip_Time) VALUES ($vals, NOW())";
+                $stmt   = $conn->prepare($sqlTip);
+                if (!$stmt) {
+                    $sqlTip = "INSERT INTO tip ($cols) VALUES ($vals)";
+                    $stmt   = $conn->prepare($sqlTip);
                 }
+                $stmt->bind_param($types, ...$params);
 
                 if ($stmt->execute()) {
-                    $upd = $conn->prepare("UPDATE shift SET Sale_Amount = Sale_Amount + ? WHERE Shift_ID = ?");
-                    $upd->bind_param("di", $sale_amount, $current_shift_id);
-                    $upd->execute();
-
-                    $message = "Tip submitted.";
+                    if ($hasTipSale) {
+                        $upd = $conn->prepare("UPDATE shift SET Sale_Amount = Sale_Amount + ? WHERE Shift_ID = ?");
+                        $upd->bind_param("di", $sale_amount, $current_shift_id);
+                        $upd->execute();
+                    }
+                    $message     = "Tip submitted.";
                     $messageType = "success";
                 } else {
-                    $message = "Error submitting tip: " . $conn->error;
+                    $message     = "Error submitting tip: " . $conn->error;
                     $messageType = "error";
                 }
             }
         }
     }
+}
+
+// Load services for tip form (employee view)
+$companyId = (int)($_SESSION['company_id'] ?? 0);
+$services  = [];
+$svcStmt   = $conn->prepare("SELECT Service_ID, Service_Name, Price FROM service WHERE Company_ID = ? AND Is_Active = 1 ORDER BY Service_Name ASC");
+if ($svcStmt) {
+    $svcStmt->bind_param("i", $companyId);
+    $svcStmt->execute();
+    $services = $svcStmt->get_result()->fetch_all(MYSQLI_ASSOC);
 }
 
 require_once "header.php";
@@ -205,10 +219,14 @@ if ($role === '102') {
     // Pull more rows and group them visually by shift date (from shift.Start_Time)
     // Prefer showing the exact time the tip was logged (tip.Tip_Time). Fallback if column doesn't exist.
     $hasIsDeleted = $hasIsDeleted ?? peachtrack_has_column($conn, 'tip', 'Is_Deleted');
-    $hasTipSale = peachtrack_has_column($conn, 'tip', 'Sale_Amount');
-    $sqlRecent = "SELECT t.Tip_Amount, " . ($hasTipSale ? "t.Sale_Amount" : "s.Sale_Amount") . " AS Sale_Amount, t.Is_It_Cash, s.Start_Time, t.Tip_Time
+    $hasTipSale    = peachtrack_has_column($conn, 'tip', 'Sale_Amount');
+    $hasServiceCol = peachtrack_has_column($conn, 'tip', 'Service_ID');
+    $svcJoin       = $hasServiceCol ? "LEFT JOIN service sv ON sv.Service_ID = t.Service_ID" : "";
+    $svcCol        = $hasServiceCol ? ", COALESCE(sv.Service_Name, '—') AS Service_Name" : ", '—' AS Service_Name";
+    $sqlRecent = "SELECT t.Tip_Amount, " . ($hasTipSale ? "t.Sale_Amount" : "s.Sale_Amount") . " AS Sale_Amount, t.Is_It_Cash, s.Start_Time, t.Tip_Time" . $svcCol . "
                   FROM tip t
                   JOIN shift s ON s.Shift_ID = t.Shift_ID
+                  " . $svcJoin . "
                   WHERE s.Employee_ID = ?" . ($hasIsDeleted ? " AND (t.Is_Deleted IS NULL OR t.Is_Deleted = 0)" : "") . "
                   ORDER BY s.Start_Time DESC, t.Tip_ID DESC
                   LIMIT 30";
@@ -359,12 +377,25 @@ if ($role === '101') {
 
     <div class="card">
       <h3 style="margin-top:0;">Log Tip</h3>
+      <?php if (empty($services)): ?>
+        <div class="alert error" style="margin-bottom:10px;">No active services available. Contact your manager to add services.</div>
+      <?php endif; ?>
       <form method="POST">
-        <label>Tip Amount ($)</label>
-        <input type="number" step="0.01" name="tip_amount" required />
+        <label>Service <span style="color:#dc2626;">*</span></label>
+        <select name="service_id" id="idx_serviceSelect" required <?php echo empty($services) ? 'disabled' : ''; ?>>
+          <option value="">-- Select a Service --</option>
+          <?php foreach ($services as $svc): ?>
+            <option value="<?php echo (int)$svc['Service_ID']; ?>" data-price="<?php echo (float)$svc['Price']; ?>">
+              <?php echo htmlspecialchars($svc['Service_Name']); ?> &mdash; $<?php echo number_format((float)$svc['Price'], 2); ?>
+            </option>
+          <?php endforeach; ?>
+        </select>
 
-        <label>Sale Amount ($) <span class="muted" style="font-weight:400;">(for this entry)</span></label>
-        <input type="number" step="0.01" name="sale_amount" required />
+        <label style="margin-top:10px;">Sale Amount ($) <span class="muted" style="font-weight:400;">(auto-filled, editable)</span></label>
+        <input type="number" step="0.01" min="0" name="sale_amount" id="idx_saleAmount" placeholder="0.00" required />
+
+        <label style="margin-top:10px;">Tip Amount ($)</label>
+        <input type="number" step="0.01" name="tip_amount" required />
 
         <label>Payment Type</label>
         <select name="is_cash">
@@ -373,64 +404,120 @@ if ($role === '101') {
         </select>
 
         <div style="margin-top:12px;">
-          <button class="btn btn-primary" type="submit" name="submit_tip" value="1">Submit Tip</button>
+          <button class="btn btn-primary" type="submit" name="submit_tip" value="1" <?php echo empty($services) ? 'disabled' : ''; ?>>Submit Tip</button>
         </div>
       </form>
       <div class="muted" style="margin-top:10px; font-size:12px;">Tip logging is tied to your active shift in the database.</div>
+      <script>
+      document.getElementById('idx_serviceSelect').addEventListener('change', function() {
+        var sel = this.options[this.selectedIndex];
+        var price = sel.getAttribute('data-price');
+        document.getElementById('idx_saleAmount').value = price ? parseFloat(price).toFixed(2) : '';
+      });
+      </script>
     </div>
   </div>
 
   <div style="height:14px"></div>
 
   <div class="card">
-    <h3 style="margin-top:0;">Recent Tips</h3>
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:12px;">
+      <h3 style="margin:0;">Recent Tips</h3>
+      <input type="text" id="tipSearch" placeholder="Search service, method, date..." oninput="filterTips()"
+        style="padding:7px 12px;border-radius:10px;border:1.5px solid var(--border);font-size:13px;width:240px;" />
+    </div>
     <?php if (empty($recentTips)): ?>
       <p class="muted">No tips recorded yet.</p>
     <?php else: ?>
       <?php
-        // Group tip entries by shift date (based on shift.Start_Time)
-        $grouped = [];
+        $allRows = [];
         foreach ($recentTips as $t) {
-          $day = date('Y-m-d', strtotime($t['Start_Time'] ?? 'now'));
-          if (!isset($grouped[$day])) $grouped[$day] = [];
-          $grouped[$day][] = $t;
+          $day     = date('Y-m-d', strtotime($t['Start_Time'] ?? 'now'));
+          $timeVal = $t['Tip_Time'] ?? $t['Start_Time'] ?? '';
+          $allRows[] = [
+            'day'     => $day,
+            'dayFmt'  => date('F j, Y', strtotime($day)),
+            'time'    => $timeVal ? date('g:i A', strtotime($timeVal)) : '-',
+            'tip'     => number_format((float)$t['Tip_Amount'], 2),
+            'sale'    => number_format((float)$t['Sale_Amount'], 2),
+            'method'  => ((int)$t['Is_It_Cash'] === 1) ? 'Cash' : 'Electronic',
+            'service' => htmlspecialchars($t['Service_Name'] ?? '—'),
+          ];
         }
       ?>
 
-      <?php foreach ($grouped as $day => $items): ?>
-        <div style="margin: 10px 0 6px; font-weight:900;">
-          <?php echo htmlspecialchars(date('F j, Y', strtotime($day))); ?>
-        </div>
-        <div class="muted" style="margin:-2px 0 8px; font-size:12px;">Tips logged during shifts started on this date</div>
-
-        <table class="table" style="margin-bottom: 14px;">
-          <thead>
-            <tr>
-              <th>Time</th>
-              <th>Tip Amount</th>
-              <th>Sales Amount</th>
-              <th>Method</th>
+      <table class="table" id="tipTable">
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Time</th>
+            <th>Service</th>
+            <th>Tip Amount</th>
+            <th>Sale Amount</th>
+            <th>Method</th>
+          </tr>
+        </thead>
+        <tbody id="tipTbody">
+          <?php foreach ($allRows as $row): ?>
+            <tr data-search="<?php echo strtolower($row['dayFmt'] . ' ' . $row['service'] . ' ' . $row['method']); ?>">
+              <td class="muted" style="font-size:.8rem;"><?php echo htmlspecialchars($row['dayFmt']); ?></td>
+              <td><?php echo htmlspecialchars($row['time']); ?></td>
+              <td><?php echo $row['service']; ?></td>
+              <td><strong>$<?php echo htmlspecialchars($row['tip']); ?></strong></td>
+              <td>$<?php echo htmlspecialchars($row['sale']); ?></td>
+              <td><?php echo htmlspecialchars($row['method']); ?></td>
             </tr>
-          </thead>
-          <tbody>
-            <?php foreach ($items as $t): ?>
-              <tr>
-                <td>
-                  <?php
-                    $timeVal = $t['Tip_Time'] ?? $t['Start_Time'] ?? '';
-                    echo $timeVal ? htmlspecialchars(date('g:i A', strtotime($timeVal))) : '-';
-                  ?>
-                </td>
-                <td>$<?php echo htmlspecialchars(number_format((float)$t['Tip_Amount'], 2)); ?></td>
-                <td>$<?php echo htmlspecialchars(number_format((float)$t['Sale_Amount'], 2)); ?></td>
-                <td><?php echo ((int)$t['Is_It_Cash'] === 1) ? 'Cash' : 'Electronic'; ?></td>
-              </tr>
-            <?php endforeach; ?>
-          </tbody>
-        </table>
-      <?php endforeach; ?>
+          <?php endforeach; ?>
+        </tbody>
+      </table>
+
+      <div id="tipFooter" style="margin-top:12px;display:flex;align-items:center;gap:12px;font-size:13px;color:var(--muted);">
+        <span id="tipCount"></span>
+        <button id="tipToggleBtn" type="button" class="btn btn-ghost" style="font-size:12px;padding:4px 12px;" onclick="toggleTips()"></button>
+      </div>
     <?php endif; ?>
   </div>
+
+  <script>
+  const TIP_PAGE  = 5;
+  let tipShowAll  = false;
+
+  function filterTips() {
+    tipShowAll = document.getElementById('tipSearch').value.trim().length > 0;
+    renderTips();
+  }
+
+  function toggleTips() {
+    tipShowAll = !tipShowAll;
+    renderTips();
+  }
+
+  function renderTips() {
+    const q      = document.getElementById('tipSearch').value.toLowerCase().trim();
+    const rows   = Array.from(document.querySelectorAll('#tipTbody tr'));
+    const matched = rows.filter(r => !q || r.dataset.search.includes(q));
+
+    rows.forEach(r => r.style.display = 'none');
+    const visible = tipShowAll ? matched : matched.slice(0, TIP_PAGE);
+    visible.forEach(r => r.style.display = '');
+
+    const countEl = document.getElementById('tipCount');
+    const btnEl   = document.getElementById('tipToggleBtn');
+
+    countEl.textContent = q
+      ? matched.length + ' result' + (matched.length !== 1 ? 's' : '') + ' for "' + q + '"'
+      : 'Showing ' + visible.length + ' of ' + matched.length + ' tip' + (matched.length !== 1 ? 's' : '');
+
+    if (matched.length > TIP_PAGE && !q) {
+      btnEl.style.display = '';
+      btnEl.textContent   = tipShowAll ? 'Show less' : 'Show all ' + matched.length;
+    } else {
+      btnEl.style.display = 'none';
+    }
+  }
+
+  document.addEventListener('DOMContentLoaded', renderTips);
+  </script>
 
 <?php endif; ?>
 
